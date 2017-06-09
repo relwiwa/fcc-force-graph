@@ -5,7 +5,7 @@ import '../sprites/flags.min.css';
 import flagsSprite from '../sprites/flags.png';
 
 const ForceGraphFlag = (props) => {
-  const { chartMargins, chartWidth, nodeData } = props;
+  const { nodeData } = props;
 
   return (
     <img

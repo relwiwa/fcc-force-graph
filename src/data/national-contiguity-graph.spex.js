@@ -1,9 +1,30 @@
 const SPEX = {
   chart: {
-    ratioFactor: 0.6
+    breakpoints: {
+      small: 640,
+      medium: 1024,
+    },
+    ratioFactorHorizontal: 0.7,
+    ratioFactorVertical: {
+      small: 2.2,
+      medium: 1.2,
+      large: 1.2
+    }
   },
   simulation: {
-    updateFactor: 2
+    forceCharge: {
+      strength: -1200,
+      distanceMin: 30,
+      distanceMax: 60
+    },
+    restartTimeout: 500,
+    stati: {
+      notStarted: 'not-started',
+      calculationOngoing: 'calculation-ongoing',
+      calculationEnded: 'calculation-ended',
+      stopped: 'stopped'
+    },
+    updateFactor: 5
   }
 };
 

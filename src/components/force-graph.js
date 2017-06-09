@@ -12,31 +12,76 @@ class ForceGraph extends Component {
     super(props);
 
     this.state = {
-      simulationEnded: false,
-      nodes: null,
-      links: null,
+      simulationStatus: SPEX.simulation.stati.notStarted,
       tickCount: 0,
     }
   }
 
-  componentWillMount() {
-    this.setState({
-      nodes: this.props.nodes,
-      links: this.props.links,
-    });
-  }
+  /* Lifecycle Methods
+  /////////////////////*/
 
   componentDidMount() {
     this.startSimulation();    
   }
 
-  componentWillUnmount() {
-    this.simulation.stop();
+  /*  Resize handling:
+      - When resize happend/is happening, simulation will be stopped
+      - Event Listeners get removed
+      - When new dimensions are received via props, simulation gets
+        started new via componentDidUpdate */
+  componentWillReceiveProps(nextProps) {
+    this.stopSimulation();
   }
 
+  /* Don't render every tick */
+  shouldComponentUpdate() {
+    const { simulationStatus, tickCount } = this.state;
+    const { stati, updateFactor } = SPEX.simulation;
+
+    if (simulationStatus === stati.calculationOngoing) {
+      if (tickCount % updateFactor === 0) {
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /*  Resize handling:
+      - After simulation was stopped due to resize, new dimensions will be
+        received
+      - A timeout is set, which will start the simulation (from the beginning) */
+  componentDidUpdate(prevProps, prevState) {
+    const { simulationStatus } = this.state;
+    const { restartTimeout, stati } = SPEX.simulation;
+
+    if (simulationStatus === stati.stopped) {
+      if (this.restartTimeout !== undefined) {
+        clearTimeout(this.restartTimeout);
+      }
+      this.restartTimeout = setTimeout(() => {
+        this.startSimulation()
+        this.setState({
+          simulationStatus: stati.ongoing
+        })
+      }, restartTimeout);
+    }
+  }
+
+  componentWillUnmount() {
+    this.stopSimulation();
+  }
+
+  /*  Handler Munctions
+  //////////////////////*/
+
   handleSimulationEnded() {
+    removeEventListener('tick', this.simulation);
+    removeEventListener('end', this.simulation);
     this.setState({
-      simulationEnded: true
+      simulationStatus: SPEX.simulation.stati.calculationEnded
     });
   }
 
@@ -45,13 +90,15 @@ class ForceGraph extends Component {
 
     /*  Keep nodes within SVG boundaries, adapted from:
         https://bl.ocks.org/mbostock/1129492 */
-    nodes.map((node) => {
-      /*  Probably, here state mutations are happening */
-      node.x = Math.max(5, Math.min(width - 5, node.x))
-      node.y = Math.max(5, Math.min(height - 5, node.y))
+    let nodesToUse = [...nodes];
+    let linksToUse = [...links];
+    nodesToUse.map((node) => {
+      // 16/10 are the flag images width/height
+      node.x = Math.max(16, Math.min(width - 16, node.x))
+      node.y = Math.max(10, Math.min(height - 10, node.y))
     });
 
-    links.map((link) => {
+    linksToUse.map((link) => {
       link.x1 = link.source.x;
       link.y1 = link.source.y;
       link.x2 = link.target.x;
@@ -59,17 +106,17 @@ class ForceGraph extends Component {
     });
     
     this.setState({
-      nodes: nodes,
-      links: links,
+      nodes: nodesToUse,
+      links: linksToUse,
       tickCount: tickCount + 1
     });
   }
 
   startSimulation() {
-    const { links, nodes } = this.state;
-    const { chartWidth, chartHeight } = this.props;
+    const { chartWidth, chartHeight, links, nodes } = this.props;
+    const { forceCharge, stati } = SPEX.simulation;
 
-    /* create new objects to prevent state mutations
+    /* Create new objects to prevent state mutations
        unsure, whether its working or what exactly happens
        within the tick callback :-( */
     this.nodes = [...nodes];
@@ -77,43 +124,52 @@ class ForceGraph extends Component {
 
     this.simulation = forceSimulation(this.nodes)
       .force('charge', forceManyBody()
-        .strength(-1200)
-        .distanceMin(30)
-        .distanceMax(50)
+        .strength(forceCharge.strength)
+        .distanceMin(forceCharge.distanceMin)
+        .distanceMax(forceCharge.distanceMax)
       )
       .force('center', forceCenter(chartWidth / 2, chartHeight / 2))
       .force('link', forceLink())
 
-      this.simulation.force('link').links(this.links);
+    this.simulation.force('link').links(this.links);
 
-      this.simulation.on('tick', () => this.handleSimulationTick(this.links, this.nodes, chartWidth, chartHeight));
+    this.simulation.on('tick', () => this.handleSimulationTick(this.links, this.nodes, chartWidth, chartHeight));
+    this.simulation.on('end', () => this.handleSimulationEnded());
 
-      this.simulation.on('end', () => this.handleSimulationEnded());
+    this.setState({
+      simulationStatus: stati.calculationOngoing
+    });
   }
 
-  shouldComponentUpdate() {
-    const { tickCount } = this.state;
-
-    if (tickCount % SPEX.simulation.updateFactor === 0) {
-      return true;
-    }
-    else {
-      return false;
-    }
+  stopSimulation() {
+    this.simulation.stop();
+    removeEventListener('tick', this.simulation);
+    removeEventListener('end', this.simulation);
+    this.setState({
+      links: null,
+      nodes: null,
+      simulationStatus: SPEX.simulation.stati.stopped,
+      tickCount: 0,
+    });
   }
 
   render() {
-    const { chartHeight, chartMargins, chartWidth } = this.props;
-    const { links, nodes, tickCount } = this.state;
+    const { chartHeight, chartWidth } = this.props;
+    const { links, nodes, simulationStatus, tickCount } = this.state;
+    const { stati } = SPEX.simulation
+
+    const showGraph = (simulationStatus !== stati.notStarted
+      && simulationStatus !== stati.stopped
+      && tickCount > 1)
+      ? true
+      : false;
 
      return (
-      <div className="force-graph text-center" style={{position: 'relative'}}>
+      <div className="force-graph text-center" style={{position: 'relative', height:chartHeight, width: chartWidth}}>
         <svg
-          style={{background: 'lightblue'}}
-          width={chartWidth + chartMargins.left + chartMargins.right}
-          height={chartHeight + chartMargins.top + chartMargins.bottom}
+          style={{position: 'absolute', top: 0, left: 0, background: 'rgba(221, 221, 221, 0.5)', color: 'gray', boxShadow: '5px 5px 5px', width: '100%', height: '100%'}}
         >
-          {tickCount > 5 && <g>
+          {showGraph && <g>
             {links.map((link) => {
               return (
                 <ForceGraphLink
@@ -124,27 +180,17 @@ class ForceGraph extends Component {
               )
             })}
           </g>}
-          {tickCount > 5 &&<g>
-            {nodes.map((node) => {
-              return (
-                <ForceGraphNode
-                  key={node.code}
-                  nodeData={node}
-                />
-              )
-            })}
-          </g>}
         </svg>
-        {tickCount > 5 && nodes.map((node) => {
-          return (
-            <ForceGraphFlag
-              key={node.code}
-              nodeData={node}
-              chartWidth={chartWidth}
-              chartMargins={chartMargins}
-            />
-          )})
-        }
+        <div style={{position:'absolute', top: 0, left: 0, right: 0, width: '100%', height: '100%'}}>
+          {showGraph && nodes.map((node) => {
+            return (
+              <ForceGraphFlag
+                key={node.code}
+                nodeData={node}
+              />
+            )})
+          }
+        </div>
       </div>
     );
   }
