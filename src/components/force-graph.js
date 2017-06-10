@@ -3,7 +3,7 @@ import { forceCenter, forceLink, forceManyBody, forceSimulation, forceX, forceY 
 
 import ForceGraphFlag from './force-graph-flag';
 import ForceGraphLink from './force-graph-link';
-import ForceGraphNode from './force-graph-node';
+import ForceGraphTooltip from './force-graph-tooltip';
 
 import SPEX from '../data/national-contiguity-graph.spex';
 
@@ -12,6 +12,9 @@ class ForceGraph extends Component {
     super(props);
 
     this.state = {
+      currNode: null,
+      links: null,
+      nodes: null,
       simulationStatus: SPEX.simulation.stati.notStarted,
       tickCount: 0,
     }
@@ -146,6 +149,7 @@ class ForceGraph extends Component {
     removeEventListener('tick', this.simulation);
     removeEventListener('end', this.simulation);
     this.setState({
+      currNode: null,
       links: null,
       nodes: null,
       simulationStatus: SPEX.simulation.stati.stopped,
@@ -155,7 +159,7 @@ class ForceGraph extends Component {
 
   render() {
     const { chartHeight, chartWidth } = this.props;
-    const { links, nodes, simulationStatus, tickCount } = this.state;
+    const { currNode, links, nodes, simulationStatus, tickCount } = this.state;
     const { stati } = SPEX.simulation
 
     const showGraph = (simulationStatus !== stati.notStarted
@@ -165,9 +169,9 @@ class ForceGraph extends Component {
       : false;
 
      return (
-      <div className="force-graph text-center" style={{position: 'relative', height:chartHeight, width: chartWidth}}>
+      <div className="force-graph text-center" style={{height:chartHeight, marginBottom: '50px', position: 'relative', width: chartWidth}}>
         <svg
-          style={{position: 'absolute', top: 0, left: 0, background: 'rgba(221, 221, 221, 0.5)', color: 'gray', boxShadow: '5px 5px 5px', width: '100%', height: '100%'}}
+          style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
         >
           {showGraph && <g>
             {links.map((link) => {
@@ -187,9 +191,15 @@ class ForceGraph extends Component {
               <ForceGraphFlag
                 key={node.code}
                 nodeData={node}
+                onMouseEnter={(node) => this.setState({ currNode: node })}
+                onMouseLeave={() => this.setState({ currNode: null })}
               />
             )})
           }
+          {currNode !== null && <ForceGraphTooltip
+            chartWidth={chartWidth}
+            currNode={currNode}
+          />}
         </div>
       </div>
     );

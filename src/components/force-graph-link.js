@@ -10,7 +10,8 @@ const ForceGraphLink = (props) => {
       y1={source.y}
       x2={target.x}
       y2={target.y}
-      stroke={'black'}
+      stroke='#1779ba'
+      strokeWidth="0.5"
     />
   )
 }
