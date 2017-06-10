@@ -97,8 +97,8 @@ class ForceGraph extends Component {
     let linksToUse = [...links];
     nodesToUse.map((node) => {
       // 16/10 are the flag images width/height
-      node.x = Math.max(16, Math.min(width - 16, node.x))
-      node.y = Math.max(10, Math.min(height - 10, node.y))
+      node.x = Math.max(25, Math.min(width - 25, node.x))
+      node.y = Math.max(15, Math.min(height - 15, node.y))
     });
 
     linksToUse.map((link) => {

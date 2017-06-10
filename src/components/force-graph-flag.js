@@ -11,12 +11,13 @@ const ForceGraphFlag = (props) => {
     <img
       style={{
         position: 'absolute',
-        top: nodeData.y - 5,
-        left: nodeData.x - 8,
-        borderRadius: '50%'
+        top: nodeData.y - 7.5,
+        left: nodeData.x - 12.5,
+        borderRadius: '100%',
+        border: '1px solid #1779ba'
       }}
-      width="16"
-      height="10"
+      width="25"
+      height="15"
       className={'flag flag-' + nodeData.code}
       onMouseEnter={() => onMouseEnter(nodeData)}
       onMouseLeave={onMouseLeave}

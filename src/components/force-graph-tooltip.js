@@ -1,8 +1,11 @@
 import React from 'react';
 
+import '../sprites/flags.min.css';
+import flagsSprite from '../sprites/flags.png';
+
 const ForceGraphTooltip = (props) => {
   const { chartWidth, currNode } = props;
-  const tooltipWidth = 100;
+  const tooltipWidth = 120;
   const tooltipPadding = 4;
   const tooltipOffsetX = 20;
   const tooltipOffsetY = 10;
@@ -23,7 +26,7 @@ const ForceGraphTooltip = (props) => {
     <div
       style={{
         position: 'absolute',
-        fontSize: '10px',
+        fontSize: '12px',
         top: tooltipPositionY,
         left: tooltipPositionX,
         width: tooltipWidth + 'px',
@@ -34,6 +37,10 @@ const ForceGraphTooltip = (props) => {
         background: 'rgba(190, 190, 190, 0.7)',
       }}
     >
+      <img
+        width="25"
+        height="15"
+        className={'flag flag-' + currNode.code} /><br />
       {currNode.country}
     </div>
   )
