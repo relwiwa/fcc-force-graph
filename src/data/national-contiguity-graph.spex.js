@@ -14,10 +14,10 @@ const SPEX = {
   simulation: {
     forceCharge: {
       strength: -1200,
-      distanceMin: 30,
+      distanceMin: 15,
       distanceMax: 60
     },
-    restartTimeout: 500,
+    restartTimeout: 200,
     stati: {
       notStarted: 'not-started',
       calculationOngoing: 'calculation-ongoing',

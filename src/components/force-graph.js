@@ -12,28 +12,24 @@ class ForceGraph extends Component {
     super(props);
 
     this.state = {
+      chartHeight: null,
+      chartWidth: null,
       currNode: null,
+      dimensionsCount: 0,
       links: null,
       nodes: null,
       simulationStatus: SPEX.simulation.stati.notStarted,
       tickCount: 0,
     }
+
+    this.handleResize = this.handleResize.bind(this);
   }
 
   /* Lifecycle Methods
   /////////////////////*/
 
   componentDidMount() {
-    this.startSimulation();    
-  }
-
-  /*  Resize handling:
-      - When resize happend/is happening, simulation will be stopped
-      - Event Listeners get removed
-      - When new dimensions are received via props, simulation gets
-        started new via componentDidUpdate */
-  componentWillReceiveProps(nextProps) {
-    this.stopSimulation();
+    this.calculateDimensions();
   }
 
   /* Don't render every tick */
@@ -52,12 +48,24 @@ class ForceGraph extends Component {
     return true;
   }
 
-  /*  Resize handling:
+  /*  Handling resize problematic in relation to svg height/display of scrollbar:
+      - There was the following problem:
+        - chartWidth + chartHeight were calculated in parent component when svg was not yet displayed
+        - when svg got displayed and a scrollbar was displayed too, the initial calucation was wrong as
+          it did not take the widht of the scrollbar into account; later calculations triggered by
+          resize event were calculated correctly
+      - To solve this problem, dimensionCount state variable is used to ensure, that the force graph
+        will only start its calculation after two render cycles:
+        - During the first render cycle, svg dimensions get calculated and svg displays
+        - During the second render cycle, scrollbar is displayed or not and is taken into account when
+          calculating the dimensions
+        - In the next render cycle, simulation gets started
+      - Apart from that, a timeout is set, that will start the simulation and restart it after 
       - After simulation was stopped due to resize, new dimensions will be
         received
       - A timeout is set, which will start the simulation (from the beginning) */
   componentDidUpdate(prevProps, prevState) {
-    const { simulationStatus } = this.state;
+    const { dimensionsCount, simulationStatus } = this.state;
     const { restartTimeout, stati } = SPEX.simulation;
 
     if (simulationStatus === stati.stopped) {
@@ -71,14 +79,87 @@ class ForceGraph extends Component {
         })
       }, restartTimeout);
     }
+    else if (simulationStatus === stati.notStarted && dimensionsCount === 1) {
+      this.calculateDimensions();
+      addEventListener('resize', this.handleResize)
+    }
+    else if (simulationStatus === stati.notStarted && dimensionsCount === 2) {
+      this.startSimulation();
+    }
   }
 
   componentWillUnmount() {
     this.stopSimulation();
+    removeEventListener('resize', this.handleResize);
   }
 
-  /*  Handler Munctions
+
+  /* Dimensions handling
+  ***********************/
+
+  /* Calculate dimensions for SVG container element and determine orientation */
+  calculateDimensions() {
+    const { dimensionsCount } = this.state;
+    const { breakpoints, ratioFactorHorizontal, ratioFactorVertical } = SPEX.chart;
+    const containerWidth = this.getContainerWidth();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Vertical alignment
+    if (windowHeight >= windowWidth && windowHeight - windowWidth > 100) {
+      let ratioFactorSelector;
+
+      if (containerWidth < breakpoints.small) {
+        ratioFactorSelector = 'small'
+      }
+      else if (containerWidth < breakpoints.medium) {
+        ratioFactorSelector = 'medium';
+      }
+      else {
+        ratioFactorSelector = 'large';
+      }
+      this.setState({
+        chartHeight: containerWidth * ratioFactorVertical[ratioFactorSelector],
+        chartWidth: containerWidth,
+        dimensionsCount: dimensionsCount + 1
+      });
+    }
+    // Horizontal alignment
+    else {
+      this.setState({
+        chartHeight: containerWidth * ratioFactorHorizontal,
+        chartWidth: containerWidth,
+        dimensionsCount: dimensionsCount + 1
+      });      
+    }
+  }
+
+  getContainerWidth() {
+    const containerComputedStyles = getComputedStyle(this.graphContainer);
+    const containerDimensions = {
+      height: containerComputedStyles['height'],
+      width: containerComputedStyles['width'],
+      paddingLeft: containerComputedStyles['padding-left'],
+      paddingRight: containerComputedStyles['padding-right']
+    }
+
+    // get rid of 'px'
+    for (let property in containerDimensions) {
+      containerDimensions[property] = containerDimensions[property].substr(0, containerDimensions[property].length - 2);
+    }
+    let { height, paddingLeft, paddingRight, width } = containerDimensions;
+    width = width - paddingLeft - paddingRight;
+    return width;    
+  }
+
+
+  /*  Handler Functions
   //////////////////////*/
+
+  handleResize() {
+    this.stopSimulation();
+    this.calculateDimensions();
+  }
 
   handleSimulationEnded() {
     removeEventListener('tick', this.simulation);
@@ -96,7 +177,7 @@ class ForceGraph extends Component {
     let nodesToUse = [...nodes];
     let linksToUse = [...links];
     nodesToUse.map((node) => {
-      // 16/10 are the flag images width/height
+      // 25/15 are the flag images width/height
       node.x = Math.max(25, Math.min(width - 25, node.x))
       node.y = Math.max(15, Math.min(height - 15, node.y))
     });
@@ -116,7 +197,8 @@ class ForceGraph extends Component {
   }
 
   startSimulation() {
-    const { chartWidth, chartHeight, links, nodes } = this.props;
+    const { links, nodes } = this.props;
+    const { chartWidth, chartHeight } = this.state;
     const { forceCharge, stati } = SPEX.simulation;
 
     /* Create new objects to prevent state mutations
@@ -158,7 +240,7 @@ class ForceGraph extends Component {
   }
 
   render() {
-    const { chartHeight, chartWidth } = this.props;
+    const { chartHeight, chartWidth } = this.state;
     const { currNode, links, nodes, simulationStatus, tickCount } = this.state;
     const { stati } = SPEX.simulation
 
@@ -169,9 +251,12 @@ class ForceGraph extends Component {
       : false;
 
      return (
-      <div className="force-graph text-center" style={{height:chartHeight, marginBottom: '50px', position: 'relative', width: chartWidth}}>
+      <div
+        ref={(el) => this.graphContainer = el}
+        className="force-graph text-center"
+        style={{height:'100%', marginBottom: '20px', position: 'relative', width: '100%'}}>
         <svg
-          style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'}}
+          style={{height: chartHeight, width: '100%'}}
         >
           {showGraph && <g>
             {links.map((link) => {
@@ -185,7 +270,7 @@ class ForceGraph extends Component {
             })}
           </g>}
         </svg>
-        <div style={{position:'absolute', top: 0, left: 0, right: 0, width: '100%', height: '100%'}}>
+        <div style={{height: '100%', left: 0, position:'absolute', top: 0, width: '100%'}}>
           {showGraph && nodes.map((node) => {
             return (
               <ForceGraphFlag
