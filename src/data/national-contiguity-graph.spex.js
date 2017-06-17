@@ -13,9 +13,15 @@ const SPEX = {
   },
   simulation: {
     forceCharge: {
-      strength: -1200,
-      distanceMin: 15,
-      distanceMax: 60
+      basicFactors: {
+        strength: -1200,
+        distanceMin: 15,
+        distanceMax: 60
+      },
+      resizeFactors: {
+        strength: 0.00065,
+        distanceMax: 0.001
+      }
     },
     restartTimeout: 200,
     stati: {

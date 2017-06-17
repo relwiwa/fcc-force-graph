@@ -12,8 +12,9 @@ import contiguityData from '../data/contiguity-data.json';
 const NationalContiguityGraph = (props) => {
   return (
     <div className="national-contiguity-graph row">
-      <div className="column small-12">
-        <h1 className="text-center">National Contiguity Graph</h1>
+      <div className="text-center column small-12">
+        <h1>National Contiguity Graph</h1>
+        <p>This graph shows border relationships between countries</p>
           <ForceGraph
             links={contiguityData.links}
             nodes={contiguityData.nodes}

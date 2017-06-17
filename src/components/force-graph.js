@@ -52,7 +52,7 @@ class ForceGraph extends Component {
       - There was the following problem:
         - chartWidth + chartHeight were calculated in parent component when svg was not yet displayed
         - when svg got displayed and a scrollbar was displayed too, the initial calucation was wrong as
-          it did not take the widht of the scrollbar into account; later calculations triggered by
+          it did not take the width of the scrollbar into account; later calculations triggered by
           resize event were calculated correctly
       - To solve this problem, dimensionCount state variable is used to ensure, that the force graph
         will only start its calculation after two render cycles:
@@ -106,7 +106,7 @@ class ForceGraph extends Component {
     const windowHeight = window.innerHeight;
 
     // Vertical alignment
-    if (windowHeight >= windowWidth && windowHeight - windowWidth > 100) {
+    if (windowHeight >= windowWidth && windowHeight - windowWidth > 50) {
       let ratioFactorSelector;
 
       if (containerWidth < breakpoints.small) {
@@ -199,7 +199,7 @@ class ForceGraph extends Component {
   startSimulation() {
     const { links, nodes } = this.props;
     const { chartWidth, chartHeight } = this.state;
-    const { forceCharge, stati } = SPEX.simulation;
+    const { forceCharge: { basicFactors, resizeFactors }, stati } = SPEX.simulation;
 
     /* Create new objects to prevent state mutations
        unsure, whether its working or what exactly happens
@@ -207,14 +207,20 @@ class ForceGraph extends Component {
     this.nodes = [...nodes];
     this.links = [...links];
 
+    const orientation = chartWidth >= chartHeight ? chartWidth : chartHeight;
+    const factors = {
+      strength: resizeFactors.strength  * orientation,
+      distanceMax: resizeFactors.distanceMax * orientation
+    };
+
     this.simulation = forceSimulation(this.nodes)
       .force('charge', forceManyBody()
-        .strength(forceCharge.strength)
-        .distanceMin(forceCharge.distanceMin)
-        .distanceMax(forceCharge.distanceMax)
+        .strength(basicFactors.strength * factors.strength)
+        .distanceMin(basicFactors.distanceMin)
+        .distanceMax(basicFactors.distanceMax * factors.distanceMax)
       )
       .force('center', forceCenter(chartWidth / 2, chartHeight / 2))
-      .force('link', forceLink())
+      .force('link', forceLink());
 
     this.simulation.force('link').links(this.links);
 
@@ -228,8 +234,8 @@ class ForceGraph extends Component {
 
   stopSimulation() {
     this.simulation.stop();
-    removeEventListener('tick', this.simulation);
-    removeEventListener('end', this.simulation);
+    this.simulation.on('tick', null);
+    this.simulation.on('end', null);
     this.setState({
       currNode: null,
       links: null,
@@ -256,7 +262,7 @@ class ForceGraph extends Component {
         className="force-graph text-center"
         style={{height:'100%', marginBottom: '20px', position: 'relative', width: '100%'}}>
         <svg
-          style={{height: chartHeight, width: '100%'}}
+          style={{border: '1px solid lightgray', height: chartHeight, width: '100%'}}
         >
           {showGraph && <g>
             {links.map((link) => {
