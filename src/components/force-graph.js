@@ -99,7 +99,7 @@ class ForceGraph extends Component {
 
   /* Calculate dimensions for SVG container element and determine orientation */
   calculateDimensions() {
-    const { dimensionsCount } = this.state;
+    const { chartWidth, dimensionsCount } = this.state;
     const { breakpoints, ratioFactorHorizontal, ratioFactorVertical } = SPEX.chart;
     const containerWidth = this.getContainerWidth();
     const windowWidth = window.innerWidth;
@@ -118,19 +118,25 @@ class ForceGraph extends Component {
       else {
         ratioFactorSelector = 'large';
       }
-      this.setState({
-        chartHeight: containerWidth * ratioFactorVertical[ratioFactorSelector],
-        chartWidth: containerWidth,
-        dimensionsCount: dimensionsCount + 1
-      });
+
+      // Check widths to prevent unneccessary re-renders caused by resize-events like show/hide address bar on mobile
+      if (dimensionsCount < 2 || chartWidth !== containerWidth) {
+        this.setState({
+          chartHeight: containerWidth * ratioFactorVertical[ratioFactorSelector],
+          chartWidth: containerWidth,
+          dimensionsCount: dimensionsCount + 1
+        });
+      }
     }
     // Horizontal alignment
     else {
-      this.setState({
-        chartHeight: containerWidth * ratioFactorHorizontal,
-        chartWidth: containerWidth,
-        dimensionsCount: dimensionsCount + 1
-      });      
+      if (dimensionsCount < 2 || chartWidth !== containerWidth) {
+        this.setState({
+          chartHeight: containerWidth * ratioFactorHorizontal,
+          chartWidth: containerWidth,
+          dimensionsCount: dimensionsCount + 1
+        });
+      }
     }
   }
 
