@@ -11,14 +11,16 @@ import contiguityData from '../data/contiguity-data.json';
 
 const NationalContiguityGraph = (props) => {
   return (
-    <div className="national-contiguity-graph row">
-      <div className="text-center column small-12">
-        <h1>National Contiguity Graph</h1>
-        <p>This graph shows border relationships between countries. It tries to display as many of the maps without overlaps as possible.</p>
-          <ForceGraph
-            links={contiguityData.links}
-            nodes={contiguityData.nodes}
-          />
+    <div className="grid-container grid-container-padded">
+      <div className="national-contiguity-graph row">
+        <div className="text-center cell">
+          <h1>National Contiguity Graph</h1>
+          <p>This graph shows border relationships between countries. It tries to display as many of the maps without overlaps as possible.</p>
+            <ForceGraph
+              links={contiguityData.links}
+              nodes={contiguityData.nodes}
+            />
+        </div>
       </div>
     </div>
   );
