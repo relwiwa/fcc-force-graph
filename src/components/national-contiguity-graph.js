@@ -3,7 +3,6 @@
     - https://medium.com/ninjaconcept/interactive-dynamic-force-directed-graphs-with-d3-da720c6d7811 */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
 
 import ForceGraph from './force-graph';
 

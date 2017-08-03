@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { forceCenter, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force';
+import { forceCenter, forceLink, forceManyBody, forceSimulation } from 'd3-force';
 
 import ForceGraphFlag from './force-graph-flag';
 import ForceGraphLink from './force-graph-link';
