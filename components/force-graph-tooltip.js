@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { colors } from '../../../config/styles';
+
 import '../sprites/flags.min.css';
 import flagsSprite from '../sprites/flags.png';
 
@@ -32,7 +34,7 @@ const ForceGraphTooltip = (props) => {
         width: tooltipWidth + 'px',
         padding: tooltipPadding + 'px',
         zIndex: 500,
-        color: '#1779ba',
+        color: colors.primary,
         fontWeight: 'bold',
         background: 'rgba(190, 190, 190, 0.7)',
       }}
